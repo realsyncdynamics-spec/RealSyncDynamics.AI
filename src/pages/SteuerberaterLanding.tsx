@@ -134,7 +134,7 @@ export function SteuerberaterLanding() {
             { t: 'Steuer-Erklärungs-Vorbereitung', d: 'Anlagen-Voranalyse · finale Prüfung Steuerberater' },
             { t: 'Mandanten-Korrespondenz', d: 'Antworts-Vorschläge mit § 203-Hinweis · finale Versendung manuell' },
             { t: 'Steuer-Recht-Recherche (RAG)', d: 'BMF-Schreiben + Rechtsprechung lokal indexiert · Quellen-Zitierung Pflicht' },
-            { t: 'Stundenerfassung', d: 'Auto-Vorschläge basierend auf Aktivität · DSGVO-konform' },
+            { t: 'Stundenerfassung', d: 'Auto-Vorschläge basierend auf Aktivität' },
             { t: 'Geldwäsche-Indikatoren', d: 'GwG-Auffälligkeits-Score mit Begründung · Final-Entscheidung Berater' },
           ]}
         />

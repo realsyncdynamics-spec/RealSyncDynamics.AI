@@ -176,7 +176,7 @@ export function SchremsIIErklaert() {
             '@context': 'https://schema.org',
             '@type': 'Article',
             headline: 'Schrems-II erklärt — Was bedeutet das für KI-Tools?',
-            description: 'EuGH C-311/18: warum US-Cloud-KI nach Schrems-II zusätzliche Schutzmaßnahmen braucht. Mit konkreten Empfehlungen für DSGVO-konforme Anbieter.',
+            description: 'EuGH C-311/18: warum US-Cloud-KI nach Schrems-II zusätzliche Schutzmaßnahmen braucht. Mit konkreten Empfehlungen zur Anbieterauswahl.',
             datePublished: '2026-05-06',
             inLanguage: 'de-DE',
             author: { '@type': 'Organization', name: 'RealSync Dynamics AI' },

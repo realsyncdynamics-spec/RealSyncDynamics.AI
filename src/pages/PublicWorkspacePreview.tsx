@@ -292,7 +292,7 @@ export function PublicWorkspacePreview() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-titanium-500 max-w-md">
             Kostenlos starten — keine Kreditkarte erforderlich.
-            EU-Hosting. DSGVO-konform by design.
+            EU-Hosting. Datenschutz als Voreinstellung.
           </p>
           <button
             onClick={() => navigate('/app')}

@@ -31,7 +31,7 @@ export function PublicSectorLanding() {
           ],
         },
         jsonLd: {
-          headline: 'KI in der öffentlichen Verwaltung — EU-souverän + AI Act konform',
+          headline: 'KI in der öffentlichen Verwaltung — EU-souverän, ausgelegt auf den AI Act',
           description:
             'Behörden-KI ist High-Risk und braucht durchgehende EU-Datenresidenz. Audit-Trail, DSFA.',
           datePublished: '2026-05-06',

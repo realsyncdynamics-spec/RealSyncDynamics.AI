@@ -873,6 +873,22 @@ export const STATUS_LABEL: Record<ImplementationStatus, string> = {
  * landing. CI greps these against landing surfaces.
  */
 export const LANDING_FORBIDDEN_LIVE_CLAIMS = [
+  // AP-0.8 (28.11.2026): unbelegte Konformitäts- und Zertifizierungsaussagen
+  'garantiert DSGVO-konform',
+  'DSGVO-zertifiziert',
+  'AI-Act-zertifiziert',
+  'EU-AI-Act-konform',
+  'EU AI Act konform',
+  // AP-0.8 Nachtrag: Varianten (Abgleich normalisiert, Verneinung ausgenommen)
+  'AI-Act-konform',
+  'AI Act compliant',
+  'DSGVO-konform',
+  'GDPR compliant',
+  'ISO 42001 zertifiziert',
+  'ISO-42001-zertifiziert',
+  '100% DSGVO',
+  '100 % DSGVO',
+  '100% EU',
   'Vollständige KI-Governance',
   'vollständige KI-Governance',
   'voll funktionsfähig',
@@ -893,4 +909,17 @@ export const LANDING_FORBIDDEN_LIVE_CLAIMS = [
   // Absolute Prüf- und Vollständigkeitsversprechen ohne Beleg.
   'jeden Prüfer überzeugt',
   'Vollständiger DSGVO-Scan',
+] as const;
+
+/**
+ * AP-0.8: Einzeln geprüfte Stellen, an denen eine gesperrte Formulierung keine Zusicherung
+ * von RealSync ist (Themenüberschrift, wiedergegebene Aussage Dritter). Nur exakte Datei +
+ * Textausschnitt; ungenutzte Einträge lassen den Check fehlschlagen.
+ */
+export const LANDING_CLAIM_EXCEPTIONS = [
+  { file: 'src/pages/DsgvoKiChecklist.tsx', text: 'DSGVO-konforme KI in <span', reason: 'Themenüberschrift einer Checkliste, keine Produktaussage' },
+  { file: 'src/pages/DsgvoKiChecklist.tsx', text: 'DSGVO-konforme KI in ${items.length} Punkten', reason: 'Themenüberschrift (SEO), keine Produktaussage' },
+  { file: 'src/pages/niche/ArztpraxenLanding.tsx', text: 'ein Webdesigner, der „DSGVO-konform', reason: 'Wiedergegebene Aussage Dritter, wird im Text infrage gestellt' },
+  { file: 'src/pages/niche/ArztpraxenLanding.tsx', text: 'Unser Webdesigner sagt, alles ist DSGVO-konform', reason: 'FAQ-Frage, wiedergegebene Aussage Dritter' },
+  { file: 'src/pages/niche/PraxenLanding.tsx', text: 'Unser Webdesigner sagt, alles ist DSGVO-konform', reason: 'FAQ-Frage, wiedergegebene Aussage Dritter' },
 ] as const;

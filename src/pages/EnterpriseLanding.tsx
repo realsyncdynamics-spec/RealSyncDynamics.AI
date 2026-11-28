@@ -41,7 +41,7 @@ export function EnterpriseLanding() {
             </h1>
             <p className="text-lg sm:text-xl text-silver-300 leading-relaxed max-w-3xl mx-auto mb-8">
               Evidence Vault mit Audit Trail, Runtime Monitoring, Multi-Tenant Management, 4h Support SLA.
-              EU-gehostet. DSGVO + EU AI Act konform.
+              Datenbank, Auth und Nachweise in der EU (Supabase Frankfurt). Unterstützt Nachweis- und Dokumentationspflichten nach DSGVO und EU AI Act.
             </p>
           </div>
 

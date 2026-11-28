@@ -603,7 +603,7 @@ function FinalCta() {
           </Link>
         </div>
         <p className="text-xs text-slate-400 mt-6 font-mono uppercase tracking-wider">
-          Keine Kreditkarte erforderlich · EU-Hosting · DSGVO-konform
+          Keine Kreditkarte erforderlich · EU-Hosting
         </p>
       </div>
     </section>

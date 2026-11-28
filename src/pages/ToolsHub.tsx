@@ -96,7 +96,7 @@ export function ToolsHub() {
     {
       icon: '📄',
       title: 'Datenschutzerklärung-Generator',
-      subtitle: 'DSGVO-konforme DSE in 3 Schritten',
+      subtitle: 'Datenschutzerklärung als Entwurf in 3 Schritten',
       desc: 'Individuelle Datenschutzerklärung für Ihre Website — kostenlos, ohne Anmeldung, sofort einsetzbar.',
       href: '/datenschutz-generator',
       badge: 'Art. 13/14 DSGVO',

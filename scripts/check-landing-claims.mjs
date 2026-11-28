@@ -10,6 +10,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findClaim, isException } from './lib/claim-match.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const registryPath = join(root, 'src/product/implementation-status.ts');
@@ -39,7 +40,15 @@ function extractNonLiveItems(src) {
   return items;
 }
 
+/** Einzeln begründete Ausnahmen { file, text, reason } aus LANDING_CLAIM_EXCEPTIONS. */
+function extractExceptions(src) {
+  const block = src.match(/export const LANDING_CLAIM_EXCEPTIONS\s*=\s*\[([\s\S]*?)\]\s*as const/);
+  if (!block) return [];
+  return [...block[1].matchAll(/file:\s*'([^']+)',\s*text:\s*'([^']+)',\s*reason:\s*'([^']+)'/g)].map((m) => ({ file: m[1], text: m[2], reason: m[3], used: 0 }));
+}
+
 const FORBIDDEN = extractForbiddenClaims(registrySrc);
+const EXCEPTIONS = extractExceptions(registrySrc);
 const NON_LIVE = extractNonLiveItems(registrySrc);
 
 const SCOPE_DIRS = [
@@ -51,6 +60,9 @@ const SCOPE_DIRS = [
 
 const EXTRA_FILES = [
   join(root, 'src/features/billing/PricingPage.tsx'),
+  // AP-0.8: öffentliche Fallback-Seite und Social-Banner tragen ebenfalls Aussagen.
+  join(root, 'index.html'),
+  join(root, 'public/brand/linkedin-banner-1584x396.svg'),
 ];
 
 function walk(dir) {
@@ -81,14 +93,36 @@ const files = [
 
 let failed = false;
 
+// AP-0.8: normalisierter Abgleich, siehe scripts/lib/claim-match.mjs
 for (const file of files) {
-  const src = readFileSync(file, 'utf8');
+  let src;
+  try {
+    src = readFileSync(file, 'utf8');
+  } catch {
+    continue;
+  }
   const rel = relative(root, file);
+  const lines = src.split(/\r?\n/);
   for (const phrase of FORBIDDEN) {
-    if (src.includes(phrase)) {
-      console.error(`::error file=${rel}::Forbidden live claim "${phrase}"`);
-      failed = true;
-    }
+    lines.forEach((line, n) => {
+      if (findClaim(line, phrase)) {
+        const ex = isException(rel, line, EXCEPTIONS);
+        if (ex) {
+          ex.used++;
+          return;
+        }
+        console.error(`::error file=${rel},line=${n + 1}::Forbidden live claim "${phrase}"`);
+        failed = true;
+      }
+    });
+  }
+}
+
+// Veraltete Ausnahmen fallen auf, statt still liegen zu bleiben.
+for (const ex of EXCEPTIONS) {
+  if (!ex.used) {
+    console.error(`::error file=src/product/implementation-status.ts::Ausnahme ohne Treffer (veraltet): ${ex.file} – "${ex.text}"`);
+    failed = true;
   }
 }
 
@@ -96,7 +130,12 @@ for (const file of files) {
 // without Preview / Coming Soon / IN VORBEREITUNG in the same file.
 for (const item of NON_LIVE) {
   for (const file of files) {
-    const src = readFileSync(file, 'utf8');
+    let src;
+    try {
+      src = readFileSync(file, 'utf8');
+    } catch {
+      continue;
+    }
     if (!src.includes(item.name)) continue;
     const rel = relative(root, file);
     if (rel.includes('LandingRoadmapSection')) continue;
@@ -120,5 +159,5 @@ if (failed) {
 }
 
 console.log(
-  `✓ Landing claims OK (${FORBIDDEN.length} forbidden phrases, ${NON_LIVE.length} non-live items checked).`,
+  `✓ Landing claims OK (${FORBIDDEN.length} forbidden phrases, ${EXCEPTIONS.length} documented exceptions, ${NON_LIVE.length} non-live items checked).`,
 );

@@ -52,7 +52,7 @@ export function OptimizerLanding() {
       </h1>
       <p className="text-lg text-titanium-300 leading-relaxed mb-8 max-w-2xl">
         Der Optimizer prüft deine Website technisch durch und zeigt dir konkret, wo sie
-        schneller, sicherer und rechtssicherer wird. Der erste Scan ist kostenlos und
+        schneller und sicherer wird und wo rechtliche Pflichtangaben fehlen. Der erste Scan ist kostenlos und
         braucht keine Anmeldung.
       </p>
 

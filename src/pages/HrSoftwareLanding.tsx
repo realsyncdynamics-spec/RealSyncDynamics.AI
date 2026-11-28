@@ -48,7 +48,7 @@ export function HrSoftwareLanding() {
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">DSFA-Wizard mit HR-Use-Cases</strong> — Recruiting, Performance, Workforce-Planning vorinstalliert</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">AI-Act-Klassifikator</strong> mit Annex-III(4)-Mapping + Conformity-Assessment-Vorlage</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Audit-Trail pro Bewerber:in / Mitarbeiter:in</strong> — welche Modelle, welche Daten, welche Empfehlung</span></li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Human-in-the-Loop-Workflows</strong> — KI darf vorschlagen, Mensch entscheidet final (Art. 22 DSGVO konform)</span></li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Human-in-the-Loop-Workflows</strong> — KI darf vorschlagen, Mensch entscheidet final (ausgelegt auf Art. 22 DSGVO)</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Bias-Auditing-Vorlagen</strong> — geschützte Merkmale aus Trainingsdaten + Output-Statistiken</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">Betriebsrat-Dokumentation</strong> — Vorlagen für BetrVG § 87 Vereinbarungen</span></li>
               <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" /><span><strong className="text-titanium-50">EU-Hosting</strong> — keine Übertragung von Mitarbeiter:innen-Daten in Drittländer</span></li>
@@ -63,7 +63,7 @@ export function HrSoftwareLanding() {
                 { t: 'Onboarding-Assistent', d: 'Personalisierte Lernpfade · DSFA-konform · keine Daten-Übertragung an Vendor' },
                 { t: 'Performance-Voranalyse', d: 'KI-Indikatoren + Quellen — Personalverantwortliche entscheidet' },
                 { t: 'Workforce-Planning', d: 'Kapazitäts-Modellierung anonymisiert · keine Einzel-Vorhersagen' },
-                { t: 'Mitarbeiter:innen-Self-Service', d: 'Datenschutz Art. 15 / 17 Selfservice · DSGVO-konform' },
+                { t: 'Mitarbeiter:innen-Self-Service', d: 'Datenschutz Art. 15 / 17 Selfservice' },
               ].map((u) => (
                 <div key={u.t} className="p-3 bg-obsidian-900 border border-titanium-900 rounded-none">
                   <div className="font-display font-bold text-titanium-50 text-sm mb-1">{u.t}</div>

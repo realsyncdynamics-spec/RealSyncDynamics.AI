@@ -717,7 +717,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/healthtech': {
     title: 'DSGVO-Compliance für HealthTech & Praxen | RealSync Dynamics AI',
     description:
-      'Automatische DSGVO-Prüfung für Gesundheits-Apps, Praxiswebsites und HealthTech-Plattformen. Sensible Patientendaten DSGVO-konform verarbeiten.',
+      'Automatische DSGVO-Prüfung für Gesundheits-Apps, Praxiswebsites und HealthTech-Plattformen. Unterstützt die Dokumentation bei sensiblen Patientendaten.',
     canonical: `${SITE_URL}/healthtech`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -829,13 +829,13 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/bildung': {
     title: 'Bildungs-Compliance — DSGVO + AI Act für EduTech | RealSync Dynamics AI',
     description:
-      'Für EduTech und Hochschulen: DSGVO-konforme Lernplattformen, AI-Act-Klassifikation für adaptive Tests + Proctoring, KMK-Konformität.',
+      'Für EduTech und Hochschulen: Datenschutzprüfung für Lernplattformen, AI-Act-Klassifikation für adaptive Tests + Proctoring, KMK-Konformität.',
     canonical: `${SITE_URL}/schulen`,
   },
   '/education': {
     title: 'Education Compliance — GDPR + EU AI Act for EdTech | RealSync Dynamics AI',
     description:
-      'For EdTech, schools, and universities: GDPR-compliant learning platforms, EU AI Act classification for adaptive testing + proctoring.',
+      'For EdTech, schools, and universities: privacy checks for learning platforms, EU AI Act classification for adaptive testing + proctoring.',
     canonical: `${SITE_URL}/schulen`,
   },
   '/saas-anbieter': {
@@ -996,7 +996,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/dsgvo-ki-checkliste': {
     title: 'DSGVO + KI Checkliste 2026 — Praxis-Guide | RealSync Dynamics AI',
     description:
-      '12 konkrete Prüfpunkte für DSGVO-konformen KI-Einsatz: Rechtsgrundlage, AVV, Schrems-II, AI-Act-Klassifikation, technische Maßnahmen, DSFA-Pflicht.',
+      '12 konkrete Prüfpunkte für den KI-Einsatz nach DSGVO: Rechtsgrundlage, AVV, Schrems-II, AI-Act-Klassifikation, technische Maßnahmen, DSFA-Pflicht.',
     canonical: `${SITE_URL}/dsgvo-ki-checkliste`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1271,7 +1271,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/integrationen': {
     title: 'Integrationen — Shopify, WordPress, Matomo, n8n | RealSync Dynamics AI',
     description:
-      'Alle Integrationen auf einen Blick: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD-Webhooks. DSGVO-konforme Datenflüsse, keine Setup-Gebühr.',
+      'Alle Integrationen auf einen Blick: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD-Webhooks. Keine Setup-Gebühr.',
     canonical: `${SITE_URL}/integrationen`,
     jsonLd: breadcrumbs([
       { name: 'Home', url: '/' },
@@ -1281,7 +1281,7 @@ export const SEO_CONFIG: Record<string, SEOConfig> = {
   '/integrations': {
     title: 'Integrations — Shopify, WordPress, Matomo, n8n | RealSync Dynamics AI',
     description:
-      'All integrations at a glance: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD webhooks. GDPR-compliant data flows, no setup fee.',
+      'All integrations at a glance: Shopify, WordPress, Matomo, HubSpot, n8n, Zapier, CI/CD webhooks. No setup fee.',
     canonical: `${SITE_URL}/integrationen`,
   },
   '/marktanalyse': {

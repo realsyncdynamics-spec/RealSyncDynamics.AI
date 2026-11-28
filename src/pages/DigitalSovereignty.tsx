@@ -214,7 +214,7 @@ export function DigitalSovereignty() {
               </Link>
             </div>
             <p className="text-xs text-titanium-500 mt-6 font-mono uppercase tracking-wider">
-              Keine Kreditkarte erforderlich · EU-Hosting · DSGVO-konform
+              Keine Kreditkarte erforderlich · EU-Hosting
             </p>
           </div>
         </section>

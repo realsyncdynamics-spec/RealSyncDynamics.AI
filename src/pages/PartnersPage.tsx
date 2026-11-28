@@ -52,7 +52,7 @@ export function PartnersPage() {
           </h1>
           <p className="text-titanium-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
             Wenn Sie Datenschutzbeauftragten-Mandate führen und vor August 2026
-            AI-Act-konforme Risk-Assessments für Ihre Mandanten ausliefern müssen:
+            Risk-Assessments nach EU AI Act für Ihre Mandanten ausliefern müssen:
             unsere Runtime liefert Discovery, Klassifikation, Controls, Evidence-Chain.
             <strong className="text-titanium-50"> Sie behalten den Mandanten — wir sind Zulieferer, kein Konkurrent.</strong>
           </p>

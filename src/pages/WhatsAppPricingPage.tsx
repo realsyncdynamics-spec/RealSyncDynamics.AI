@@ -170,7 +170,7 @@ export function WhatsAppPricingPage() {
         </h1>
 
         <p className="text-lg md:text-xl text-titanium-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-          DSGVO- und EU AI Act-konform. Automatisierte Compliance-Kommunikation über WhatsApp Business.
+          Unterstützt Nachweise nach DSGVO und EU AI Act. Automatisierte Compliance-Kommunikation über WhatsApp Business.
           Von Audit-Assistenten bis zur Fallbearbeitung — alles audit-geloggt.
         </p>
 
@@ -328,7 +328,7 @@ export function WhatsAppPricingPage() {
             },
             {
               q: 'Wird jede Nachricht audit-geloggt?',
-              a: 'Ja. Jede Nachricht, jede Benutzerinteraktion und jede AI-Entscheidung wird vollständig audit-geloggt und ist DSGVO-konform exportierbar.',
+              a: 'Ja. Nachrichten, Benutzerinteraktionen und KI-Entscheidungen werden audit-geloggt und sind exportierbar, z. B. für Auskunftsersuchen nach Art. 15 DSGVO.',
             },
             {
               q: 'Können mehrere WhatsApp-Nummern verwendet werden?',

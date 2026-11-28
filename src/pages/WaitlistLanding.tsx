@@ -98,7 +98,7 @@ const STEPS = [
 
 const TRUST = [
   'EU-Hosting (Frankfurt)',
-  'DSGVO-konform',
+  'AV-Vertrag nach Art. 28 DSGVO',
   'EU AI Act',
   'Kein Newsletter',
   'Jederzeit widerrufbar',

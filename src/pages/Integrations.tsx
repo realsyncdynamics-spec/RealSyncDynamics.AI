@@ -19,7 +19,7 @@ const INTEGRATIONS: Integration[] = [
   { name: 'OpenAI', category: 'Data/Analytics', status: 'live', desc: 'GPT-Modelle als Alternative-Provider' },
   { name: 'Google Gemini API', category: 'Data/Analytics', status: 'live', desc: 'Gemini-Modelle als optionaler Provider (USA, EU-DPA + SCCs)' },
   { name: 'Ollama', category: 'Data/Analytics', status: 'live', desc: 'Lokale Open-Weight-Modelle (gemma3, qwen2.5) auf VPS in Deutschland — EU-lokaler Modus per Opt-in' },
-  { name: 'Sentry', category: 'Data/Analytics', status: 'live', desc: 'DSGVO-konform: sendDefaultPii=false, EU-Region wenn aktiviert' },
+  { name: 'Sentry', category: 'Data/Analytics', status: 'live', desc: 'Datensparsam: sendDefaultPii=false, EU-Region wenn aktiviert' },
   { name: 'GitHub', category: 'Auth/SSO', status: 'live', desc: 'OAuth-Provider, Repository und CI' },
   { name: 'HubSpot', category: 'CRM/Marketing', status: 'planned', desc: 'CRM-Sync für Sales-Leads, geplant Q3/26' },
   { name: 'Pipedrive', category: 'CRM/Marketing', status: 'planned', desc: 'Alternative-CRM-Sync, geplant Q3/26' },

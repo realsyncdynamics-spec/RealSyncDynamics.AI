@@ -174,8 +174,8 @@ export function DemoLandingPage() {
               },
               {
                 icon: '🤖',
-                title: 'AI Act Compliant',
-                description: 'Full EU AI Act classification support',
+                title: 'AI Act Classification',
+                description: 'Support for EU AI Act risk classification',
               },
               {
                 icon: '📈',

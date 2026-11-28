@@ -23,6 +23,12 @@ on:
       - 'src/content/runtimeVocab.ts'
       - 'src/product/implementation-status.ts'
       - 'scripts/check-landing-claims.mjs'
+      - 'scripts/lib/claim-match.mjs'
+      - 'scripts/lib/claim-match.test.mjs'
+      - 'src/config/**'
+      - 'src/features/billing/PricingPage.tsx'
+      - 'index.html'
+      - 'public/brand/**'
       - '.github/workflows/cta-enforcement.yml'
   workflow_dispatch:
 
@@ -54,6 +60,9 @@ jobs:
           fi
 
           echo "✓ Keine verbotenen CTA-Phrasen im öffentlichen Frontend."
+
+      - name: Claims-Abgleich testen (AP-0.8)
+        run: node --test scripts/lib/claim-match.test.mjs
 
       - name: Landing claims vs implementation-status registry
         run: node scripts/check-landing-claims.mjs

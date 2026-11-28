@@ -183,7 +183,7 @@ Diese Datenschutzerklärung ist aktuell gültig und hat den Stand ${date}. Durch
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <span style={{ fontSize: 36 }}>📄</span>
           <h1 style={{ fontSize: 26, fontWeight: 700, margin: '8px 0 4px' }}>Datenschutzerklärung-Generator</h1>
-          <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 16px 0' }}>DSGVO-konforme DSE in 3 Schritten — kostenlos & ohne Anmeldung</p>
+          <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 16px 0' }}>Datenschutzerklärung als Entwurf in 3 Schritten — kostenlos & ohne Anmeldung</p>
         </div>
         <LegalDisclaimer context="document" />
         <div style={{ textAlign: 'center', marginBottom: 32 }}>

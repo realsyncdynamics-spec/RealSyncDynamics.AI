@@ -1,0 +1,232 @@
+# gitleaks – bekannte, geprüfte Altfunde (AP-0.4, 28.11.2026). Je Zeile EIN Fund (commit:datei:regel:zeile).
+# Keine Muster, keine Regel- oder Pfad-Ausnahmen: neue Commits werden immer vollständig geprüft.
+# Jede Änderung an dieser Datei braucht ein Review durch CODEOWNERS (Sicherheit).
+
+# Platzhalter/Test/Doku, geprüft
+ad5654ba17b555e060a4c097bef25cd8ddcd7bc3:test/workers/browser-run-executor.test.ts:generic-api-key:21
+# Platzhalter/Test/Doku, geprüft
+7d95d858041425101f67421d5154a6a76f6ffe10:src/features/governance/IntegrationsView.tsx:stripe-access-token:51
+# Platzhalter/Test/Doku, geprüft
+d6653f61bcc27590cf4cb261e86fa3d043b30aed:docs/DASHBOARD_SETUP_CHECKLIST.md:curl-auth-header:34
+# Platzhalter/Test/Doku, geprüft
+d6653f61bcc27590cf4cb261e86fa3d043b30aed:docs/DASHBOARD_SETUP_CHECKLIST.md:curl-auth-header:47
+# Platzhalter/Test/Doku, geprüft
+4a5842263cbb72f31c667838b8454b75da255fd6:test/security/telegram-webhook-auth.test.ts:generic-api-key:11
+# Platzhalter/Test/Doku, geprüft
+981c5169e610e5cf168ad23018dc2c78481b07e8:test/security/telegram-webhook-auth.test.ts:generic-api-key:11
+# Platzhalter/Test/Doku, geprüft
+8e5ab241d387401cc8182fd915ef521f8c94199b:PHASE_3_R2_SETUP_GUIDE.md:generic-api-key:113
+# Platzhalter/Test/Doku, geprüft
+85646f00f02fbbaf83cfc95bc6b4453408636e0c:PARTNER_PROVISIONING_API.md:curl-auth-header:55
+# Platzhalter/Test/Doku, geprüft
+a70ae1a296aa3379cfb332c46a4001c2c6c4aa15:src/features/api/API_DEVELOPER_GUIDE.md:curl-auth-header:137
+# Platzhalter/Test/Doku, geprüft
+c6906c02cad7d7629f5f63170fd90ad64b6e5af4:test/edge/provision-voice-agent.test.ts:generic-api-key:123
+# Platzhalter/Test/Doku, geprüft
+279f2d2c45b5e3036bc5d068901f0d2cc11b39e5:test/edge/provision-voice-agent.test.ts:generic-api-key:79
+# Platzhalter/Test/Doku, geprüft
+263f7032aa0b15b559e6bf9454669015f4b1bb56:test/edge/provision-voice-agent.test.ts:generic-api-key:79
+# Platzhalter/Test/Doku, geprüft
+7e384ecf6de0b06afd4cc934e141a98f25419685:test/features/finance/deadlineCatalog.test.ts:generic-api-key:35
+# Platzhalter/Test/Doku, geprüft
+72ec3bc3c5e86aaf6403fb1985f4ae65a27c58b9:test/features/finance/deadlineCatalog.test.ts:generic-api-key:35
+# Platzhalter/Test/Doku, geprüft
+7e384ecf6de0b06afd4cc934e141a98f25419685:test/features/finance/deadlineCatalog.test.ts:generic-api-key:53
+# Platzhalter/Test/Doku, geprüft
+72ec3bc3c5e86aaf6403fb1985f4ae65a27c58b9:test/features/finance/deadlineCatalog.test.ts:generic-api-key:53
+# Platzhalter/Test/Doku, geprüft
+3554273b6739c1a5b7e30c4718c4fd0561d26b23:test/edge/entitlement-gates.test.ts:generic-api-key:42
+# Platzhalter/Test/Doku, geprüft
+1c400036a57e8c11a9d2ab166aa368f361e6ee94:test/edge/entitlement-gates.test.ts:generic-api-key:42
+# Platzhalter/Test/Doku, geprüft
+5d3643f66b3fa0a5aa88026102a2dc4216477f9b:test/edge/entitlement-gates.test.ts:generic-api-key:42
+# Platzhalter/Test/Doku, geprüft
+8b3261108d8e9b0e1814e6ec99fc184d937be5aa:deploy/playwright-scanner/DEPLOY.md:curl-auth-header:171
+# H2 Dev-TLS-Schlüssel *.localhost, seit 21.08.2026 entfernt
+585550f00a38b52849c7347726b21eb5643f2f00:platform/traefik/certs/server.key:private-key:1
+# Platzhalter/Test/Doku, geprüft
+725afbab19bca5bc79b9548ec7006567337e2c0e:docs/phase-2b-observability.md:curl-auth-header:105
+# Platzhalter/Test/Doku, geprüft
+c770cd253d5b6fd49fbbc04b31ad796f401d5c7f:scripts/k6-verify-jwt-load.js:generic-api-key:109
+# Platzhalter/Test/Doku, geprüft
+397c1f3451daa7d2fb73a3a95601ca444bd899b0:workers/govard-gateway/README.md:generic-api-key:88
+# Platzhalter/Test/Doku, geprüft
+0fe9d94930084353a06df08faeb2a7ae87160727:workers/govard-gateway/README.md:generic-api-key:88
+# Platzhalter/Test/Doku, geprüft
+4a5842263cbb72f31c667838b8454b75da255fd6:test/security/telegram-webhook-auth.test.ts:generic-api-key:13
+# Platzhalter/Test/Doku, geprüft
+981c5169e610e5cf168ad23018dc2c78481b07e8:test/security/telegram-webhook-auth.test.ts:generic-api-key:13
+# Platzhalter/Test/Doku, geprüft
+705c7c90f24593f150dfe9f159f49d8dc526b315:test/deploy/n8n-report-guards.test.ts:generic-api-key:39
+# Platzhalter/Test/Doku, geprüft
+a87a03fe8088d54cf9d194040ec5dfb9f119b2ed:test/api-integrations.test.ts:generic-api-key:12
+# Platzhalter/Test/Doku, geprüft
+d32cbc712ed26a123cec08aef6544e8e15a2278f:platform/README.md:curl-auth-header:387
+# Platzhalter/Test/Doku, geprüft
+b79249f79b26365cf0dd42d22a756c19380a117c:.env.production:generic-api-key:12
+# Platzhalter/Test/Doku, geprüft
+4c18997a9cb02529b5d5938288999b33b99b6fbc:DOCKER_VPS_DEPLOYMENT.md:generic-api-key:196
+# Platzhalter/Test/Doku, geprüft
+df735ca752715f900eabdf9059fe77a256c224dd:deploy/VPS_DEPLOYMENT_GUIDE.md:generic-api-key:83
+# Platzhalter/Test/Doku, geprüft
+df735ca752715f900eabdf9059fe77a256c224dd:deploy/vps-setup.sh:generic-api-key:143
+# Platzhalter/Test/Doku, geprüft
+fe0b58a505ecad4821dde56b4b8c6b00addfc6c9:docker/realsync-web-staging/.env.example:generic-api-key:12
+# Platzhalter/Test/Doku, geprüft
+4c18997a9cb02529b5d5938288999b33b99b6fbc:docker/realsync-web/.env.example:generic-api-key:32
+# Platzhalter/Test/Doku, geprüft
+4c18997a9cb02529b5d5938288999b33b99b6fbc:docker/realsync-web/README.md:generic-api-key:69
+# Platzhalter/Test/Doku, geprüft
+2651071ba69c05d1d787cdc013a9e59c1f633a1d:docs/product/pricing-backend-mapping.md:curl-auth-header:89
+# Platzhalter/Test/Doku, geprüft
+afe68564a7cabef7957410f27521819326d4cd88:docs/product/pricing-backend-mapping.md:curl-auth-header:89
+# Platzhalter/Test/Doku, geprüft
+27c8dd0e7472bea42f06939e486ab213afe089b1:AUDIT/18_FINDINGS.md:stripe-access-token:408
+# Platzhalter/Test/Doku, geprüft
+1e1c22ff79fc16a6074a9c0b6d3fe5e51499f6f3:AUDIT/18_FINDINGS.md:stripe-access-token:388
+# Platzhalter/Test/Doku, geprüft
+2651071ba69c05d1d787cdc013a9e59c1f633a1d:docs/product/pricing-backend-mapping.md:curl-auth-header:126
+# Platzhalter/Test/Doku, geprüft
+afe68564a7cabef7957410f27521819326d4cd88:docs/product/pricing-backend-mapping.md:curl-auth-header:126
+# Platzhalter/Test/Doku, geprüft
+e8554ad26c17b0cc339d0c68d2d62422469744fa:test/bots/restaurantWebhook.test.ts:generic-api-key:16
+# Platzhalter/Test/Doku, geprüft
+e8554ad26c17b0cc339d0c68d2d62422469744fa:test/bots/restaurantWebhook.test.ts:generic-api-key:51
+# Platzhalter/Test/Doku, geprüft
+e8554ad26c17b0cc339d0c68d2d62422469744fa:test/bots/restaurantWebhook.test.ts:generic-api-key:58
+# Platzhalter/Test/Doku, geprüft
+e8554ad26c17b0cc339d0c68d2d62422469744fa:test/bots/restaurantWebhook.test.ts:generic-api-key:62
+# Platzhalter/Test/Doku, geprüft
+e8554ad26c17b0cc339d0c68d2d62422469744fa:test/bots/restaurantWebhook.test.ts:generic-api-key:66
+# Platzhalter/Test/Doku, geprüft
+e8554ad26c17b0cc339d0c68d2d62422469744fa:test/bots/restaurantWebhook.test.ts:generic-api-key:70
+# Platzhalter/Test/Doku, geprüft
+e8554ad26c17b0cc339d0c68d2d62422469744fa:test/bots/restaurantWebhook.test.ts:generic-api-key:74
+# Platzhalter/Test/Doku, geprüft
+e8554ad26c17b0cc339d0c68d2d62422469744fa:test/bots/restaurantWebhook.test.ts:generic-api-key:78
+# Platzhalter/Test/Doku, geprüft
+8b3261108d8e9b0e1814e6ec99fc184d937be5aa:deploy/playwright-scanner/DEPLOY.md:curl-auth-header:104
+# Platzhalter/Test/Doku, geprüft
+8b3261108d8e9b0e1814e6ec99fc184d937be5aa:deploy/playwright-scanner/DEPLOY.md:curl-auth-header:113
+# Platzhalter/Test/Doku, geprüft
+d5abdfa02fad27c33d54b79f453a4a947195a194:registry/deployments/scaleway-generative-apis-fr-par.json:generic-api-key:702
+# Platzhalter/Test/Doku, geprüft
+1eff1ffa9ac543e08be6f0f8f490bee1f1d4ecd3:test/core/ai-gateway/edgeClient.user-auth.test.ts:jwt:16
+# Platzhalter/Test/Doku, geprüft
+afb16b91dc511b1a4718ff36de4ce164629ae453:test/core/ai-gateway/edgeClient.user-auth.test.ts:jwt:16
+# Platzhalter/Test/Doku, geprüft
+09bd0e742b66ef100933fc6ed7f576d510f30508:test/core/ai-gateway/edgeClient.user-auth.test.ts:jwt:16
+# Platzhalter/Test/Doku, geprüft
+1eff1ffa9ac543e08be6f0f8f490bee1f1d4ecd3:test/features/assistant/assistantQuickChatApi.anon.test.ts:jwt:6
+# Platzhalter/Test/Doku, geprüft
+3e85617d209e0140e314b52a4e921703d4a5dafa:test/features/assistant/assistantQuickChatApi.anon.test.ts:jwt:6
+# Platzhalter/Test/Doku, geprüft
+09bd0e742b66ef100933fc6ed7f576d510f30508:test/features/assistant/assistantQuickChatApi.anon.test.ts:jwt:6
+# Platzhalter/Test/Doku, geprüft
+ba60e38df0462f011c5f20906804feaaab02287c:test/features/audit/auditCopilotApi.auth.test.ts:jwt:13
+# Platzhalter/Test/Doku, geprüft
+09bd0e742b66ef100933fc6ed7f576d510f30508:test/features/audit/auditCopilotApi.auth.test.ts:jwt:13
+# Platzhalter/Test/Doku, geprüft
+d5abdfa02fad27c33d54b79f453a4a947195a194:registry/deployments/mistral-la-plateforme-eu.json:generic-api-key:413
+# Platzhalter/Test/Doku, geprüft
+fd9879cedf0124d621fd787979109e04e2e822a8:test/edge/email-unsubscribe.test.ts:generic-api-key:30
+# Platzhalter/Test/Doku, geprüft
+d5abdfa02fad27c33d54b79f453a4a947195a194:registry/deployments/scaleway-generative-apis-fr-par.json:generic-api-key:912
+# Platzhalter/Test/Doku, geprüft
+8e5ab241d387401cc8182fd915ef521f8c94199b:PHASE_3_IMPLEMENTATION_ROADMAP.md:curl-auth-header:260
+# Platzhalter/Test/Doku, geprüft
+8e5ab241d387401cc8182fd915ef521f8c94199b:PHASE_3_IMPLEMENTATION_ROADMAP.md:curl-auth-header:274
+# Platzhalter/Test/Doku, geprüft
+dfa789255dbce42bab631d399879d41fa35ed792:TEAM_ONBOARDING.md:curl-auth-header:175
+# Platzhalter/Test/Doku, geprüft
+0aeb8f7946069b4105e3a947ece88107be0bac02:TEAM_ONBOARDING.md:curl-auth-header:175
+# Platzhalter/Test/Doku, geprüft
+d6653f61bcc27590cf4cb261e86fa3d043b30aed:docs/DASHBOARD_SETUP_CHECKLIST.md:curl-auth-header:56
+# Platzhalter/Test/Doku, geprüft
+a87a03fe8088d54cf9d194040ec5dfb9f119b2ed:test/api-integrations.test.ts:generic-api-key:544
+# Platzhalter/Test/Doku, geprüft
+b933a96e43af4ce5b2d54d3968f81c4b6786cc68:src/features/secretariat/websiteDraft.ts:generic-api-key:14
+# Platzhalter/Test/Doku, geprüft
+d5abdfa02fad27c33d54b79f453a4a947195a194:registry/deployments/scaleway-generative-apis-fr-par.json:generic-api-key:852
+# Platzhalter/Test/Doku, geprüft
+c2ee569d9764dfb845af79e4e78060e554416c7d:test/edge/ingest-key-auth.test.ts:stripe-access-token:64
+# Platzhalter/Test/Doku, geprüft
+7283b5ba8ee6e7dbc528a8b3d3671f9de4f2a4d9:test/edge/ingest-key-auth.test.ts:stripe-access-token:64
+# Platzhalter/Test/Doku, geprüft
+1127c1007acbd7c3501fa95b1b615a9e0358b1f9:test/governance-api-keys.test.ts:jwt:18
+# Platzhalter/Test/Doku, geprüft
+1127c1007acbd7c3501fa95b1b615a9e0358b1f9:test/governance-rls.test.ts:jwt:23
+# Platzhalter/Test/Doku, geprüft
+4a5842263cbb72f31c667838b8454b75da255fd6:test/security/telegram-webhook-auth.test.ts:generic-api-key:12
+# Platzhalter/Test/Doku, geprüft
+981c5169e610e5cf168ad23018dc2c78481b07e8:test/security/telegram-webhook-auth.test.ts:generic-api-key:12
+# Platzhalter/Test/Doku, geprüft
+3554273b6739c1a5b7e30c4718c4fd0561d26b23:apps/mcp-server/README.md:generic-api-key:88
+# Platzhalter/Test/Doku, geprüft
+382060d7e5dff711f009c5ad239c96a9efa0ba66:apps/mcp-server/README.md:generic-api-key:88
+# Platzhalter/Test/Doku, geprüft
+13f5496da0d9f78c027c2468ef6a7b39f0ae6a94:apps/mcp-server/README.md:generic-api-key:86
+# Platzhalter/Test/Doku, geprüft
+b9885355bc35829051fd50ae26ff2e4f078c008d:apps/mcp-server/README.md:generic-api-key:84
+# Platzhalter/Test/Doku, geprüft
+a87a03fe8088d54cf9d194040ec5dfb9f119b2ed:test/api-integrations.test.ts:generic-api-key:21
+# Platzhalter/Test/Doku, geprüft
+a87a03fe8088d54cf9d194040ec5dfb9f119b2ed:test/api-integrations.test.ts:generic-api-key:168
+# Platzhalter/Test/Doku, geprüft
+a87a03fe8088d54cf9d194040ec5dfb9f119b2ed:test/api-integrations.test.ts:generic-api-key:172
+# Platzhalter/Test/Doku, geprüft
+a87a03fe8088d54cf9d194040ec5dfb9f119b2ed:test/api-integrations.test.ts:generic-api-key:543
+# Platzhalter/Test/Doku, geprüft
+7e384ecf6de0b06afd4cc934e141a98f25419685:test/features/finance/deadlineCatalog.test.ts:generic-api-key:32
+# Platzhalter/Test/Doku, geprüft
+72ec3bc3c5e86aaf6403fb1985f4ae65a27c58b9:test/features/finance/deadlineCatalog.test.ts:generic-api-key:32
+# Platzhalter/Test/Doku, geprüft
+694b92aa2ed3a2d9c82b606c19c64761daafb498:test/automation-trigger-trial-webhook.test.ts:generic-api-key:89
+# Platzhalter/Test/Doku, geprüft
+694b92aa2ed3a2d9c82b606c19c64761daafb498:test/automation-trigger-trial-webhook.test.ts:generic-api-key:98
+# Platzhalter/Test/Doku, geprüft
+8b450be0237f471df1dfc2340a8e9d3810d60619:test/automation-trigger-trial-webhook.test.ts:generic-api-key:89
+# Platzhalter/Test/Doku, geprüft
+8b450be0237f471df1dfc2340a8e9d3810d60619:test/automation-trigger-trial-webhook.test.ts:generic-api-key:98
+# Platzhalter/Test/Doku, geprüft
+8b3261108d8e9b0e1814e6ec99fc184d937be5aa:deploy/playwright-scanner/DEPLOY.md:curl-auth-user:104
+# Platzhalter/Test/Doku, geprüft
+8b3261108d8e9b0e1814e6ec99fc184d937be5aa:deploy/playwright-scanner/DEPLOY.md:curl-auth-user:113
+# Platzhalter/Test/Doku, geprüft
+2daafbb15f818d3ab294bfda7a8030e53624e565:apps/mcp-server/test/api-keys.test.ts:generic-api-key:48
+# Platzhalter/Test/Doku, geprüft
+13f5496da0d9f78c027c2468ef6a7b39f0ae6a94:apps/mcp-server/test/api-keys.test.ts:generic-api-key:27
+# Platzhalter/Test/Doku, geprüft
+68c776f646b3dc139cfa1cb6aa81f754e004bda4:apps/mcp-server/test/api-keys.test.ts:generic-api-key:27
+# Platzhalter/Test/Doku, geprüft
+3554273b6739c1a5b7e30c4718c4fd0561d26b23:apps/mcp-server/test/key-hash.test.ts:generic-api-key:130
+# Platzhalter/Test/Doku, geprüft
+382060d7e5dff711f009c5ad239c96a9efa0ba66:apps/mcp-server/test/key-hash.test.ts:generic-api-key:130
+# Platzhalter/Test/Doku, geprüft
+d65563f55aa127beeb845e314f3151e680c58f59:apps/mcp-server/test/key-hash.test.ts:generic-api-key:130
+# Platzhalter/Test/Doku, geprüft
+7e384ecf6de0b06afd4cc934e141a98f25419685:test/features/finance/deadlineCatalog.test.ts:generic-api-key:56
+# Platzhalter/Test/Doku, geprüft
+72ec3bc3c5e86aaf6403fb1985f4ae65a27c58b9:test/features/finance/deadlineCatalog.test.ts:generic-api-key:56
+# Platzhalter/Test/Doku, geprüft
+85646f00f02fbbaf83cfc95bc6b4453408636e0c:PARTNER_PROVISIONING_API.md:generic-api-key:76
+# Platzhalter/Test/Doku, geprüft
+cb12c0ac7a62dc8e86640e8bee6ee4982aec3ccf:WEBHOOK_INTEGRATION_GUIDE.md:generic-api-key:46
+# Platzhalter/Test/Doku, geprüft
+8f115a98f314cc3849e07fbe5e4a7df1a7846095:services/openclaw-agent/.env.example:generic-api-key:6
+# Platzhalter/Test/Doku, geprüft
+d459c48437844f14c08af7c1acc6c1304ef58b6e:services/openclaw-agent/.env.example:generic-api-key:6
+# Platzhalter/Test/Doku, geprüft
+180ed673fb162b5fbd0de970522cadbf2487f6ca:design/handoff/realsync-ai-app/_ds/realsyncdynamics-design-system-97bc273e-9efd-41da-b292-172c7909488d/_ds_bundle.js:generic-api-key:202
+# H3 Supabase Publishable Key (öffentlich vorgesehen)
+18e6f52af1e957c1bc7b7bd33ed6e97f71e4db62:functions/api/fn/[[name]].ts:generic-api-key:9
+# H3 Supabase Publishable Key (öffentlich vorgesehen)
+e01dc735d8da5ba86c0eaa0c0badd131262dbc67:functions/api/fn/[[name]].ts:generic-api-key:9
+# H3 Supabase Publishable Key (öffentlich vorgesehen)
+08cd5f24d878598f35802ba4f114bc70c1325013:src/lib/supabaseUrl.ts:generic-api-key:20
+# H3 Supabase Publishable Key (öffentlich vorgesehen)
+47b7dad7d6f00991639796dbea7544a456e3bae2:src/lib/supabaseUrl.ts:generic-api-key:20
+# Test-Fixture: lokaler Supabase-JWT (ref=local, kein Projekt), eigene Regel supabase-service-role-jwt
+1127c1007acbd7c3501fa95b1b615a9e0358b1f9:test/governance-api-keys.test.ts:supabase-service-role-jwt:18
+# Test-Fixture: lokaler Supabase-JWT (ref=local, kein Projekt), eigene Regel supabase-service-role-jwt
+1127c1007acbd7c3501fa95b1b615a9e0358b1f9:test/governance-rls.test.ts:supabase-service-role-jwt:23

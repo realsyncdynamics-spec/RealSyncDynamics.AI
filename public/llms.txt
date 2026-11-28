@@ -14,7 +14,7 @@ Hosting der Laufzeit: EU (Supabase, Region Frankfurt).
 - [Kostenloser Audit](https://realsyncdynamicsai.de/audit): DSGVO-Scan einer Website-URL, Ergebnis in etwa 60 Sekunden
 - [AI Governance OS](https://realsyncdynamicsai.de/ai-act): Inventar, Risikoklassifizierung, Policies, Evidence
 - [Funktionen](https://realsyncdynamicsai.de/features): Website-Scan, AI-Act-Inventar, Audit-Trail
-- [Integrationen](https://realsyncdynamicsai.de/integrations): Shopify, WordPress, Matomo, n8n
+- [Integrationen](https://realsyncdynamicsai.de/integrationen): Shopify, WordPress, Matomo, n8n
 - [API-Dokumentation](https://realsyncdynamicsai.de/api-docs)
 
 ## Preise

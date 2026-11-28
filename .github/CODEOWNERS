@@ -20,3 +20,9 @@
 /.github/CODEOWNERS @realsyncdynamics-spec
 /.github/workflows/merge-hygiene.yml @realsyncdynamics-spec
 /docs/MERGE_CONFLICT_CONCEPT.md @realsyncdynamics-spec
+
+# Secret-Scan (AP-0.9) – Ausnahmen nur mit Review
+/.gitleaks.toml @realsyncdynamics-spec
+/.gitleaksignore @realsyncdynamics-spec
+/.github/workflows/secret-scan.yml @realsyncdynamics-spec
+/scripts/secret-scan-selftest.sh @realsyncdynamics-spec

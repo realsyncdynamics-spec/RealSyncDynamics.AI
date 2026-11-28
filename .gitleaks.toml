@@ -1,0 +1,27 @@
+# gitleaks-Konfiguration (AP-0.9, 28.11.2026)
+# Basis: alle Standardregeln von gitleaks. Ergänzt um Regeln, die im Secret-Scan
+# AP-0.4 als Lücke aufgefallen sind. Keine globalen Ausnahmen für Regeln,
+# Schlüsseltypen oder Pfade, keine deaktivierten Standardregeln.
+# Bekannte Altfunde stehen einzeln in .gitleaksignore. Inline-Ausnahmen
+# („gitleaks:allow“) wirken nicht: der Workflow scannt mit --ignore-gitleaks-allow.
+
+title = "RealSyncDynamics.AI secret scan"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase Secret API Key (sb_secret_…), ersetzt den service_role-Key"
+regex = '''\bsb_secret_[A-Za-z0-9_-]{20,}\b'''
+keywords = ["sb_secret_"]
+tags = ["supabase", "key"]
+
+[[rules]]
+id = "supabase-service-role-jwt"
+description = "Supabase Legacy service_role JWT (Payload enthält role=service_role)"
+# Base64url von "role":"service_role" (mit und ohne Leerzeichen) an allen drei
+# möglichen Byte-Ausrichtungen im Payload. Geprüft: 3.000 zufällige Feldreihenfolgen, 0 verfehlt.
+regex = '''\beyJ[A-Za-z0-9_-]{10,}\.ey[A-Za-z0-9_-]*(?:InJvbGUiOiJzZXJ2aWNlX3JvbGUi|Jyb2xlIjoic2VydmljZV9yb2xlI|icm9sZSI6InNlcnZpY2Vfcm9sZS|InJvbGUiOiAic2VydmljZV9yb2xlI|Jyb2xlIjogInNlcnZpY2Vfcm9sZS|icm9sZSI6ICJzZXJ2aWNlX3JvbGUi)[A-Za-z0-9_-]*\.[A-Za-z0-9_-]{20,}'''
+keywords = ["eyj"]
+tags = ["supabase", "jwt"]

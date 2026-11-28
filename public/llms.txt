@@ -28,8 +28,8 @@ Hosting der Laufzeit: EU (Supabase, Region Frankfurt).
 ## Rechtliches
 
 - [Impressum](https://realsyncdynamicsai.de/legal/impressum)
-- [Datenschutzerklärung](https://realsyncdynamicsai.de/legal/datenschutz)
-- [AGB](https://realsyncdynamicsai.de/agb)
+- [Datenschutzerklärung](https://realsyncdynamicsai.de/legal/privacy)
+- [AGB](https://realsyncdynamicsai.de/legal/terms)
 - [Auftragsverarbeitung (AVV)](https://realsyncdynamicsai.de/legal/avv)
 - [Unterauftragsverarbeiter](https://realsyncdynamicsai.de/legal/sub-processors)
 - [Methodik der Scans](https://realsyncdynamicsai.de/legal/methodology)
